@@ -1,0 +1,15 @@
+{
+    "watson_conversation" : {
+        "username" :"f8857516-fd05-41c4-bb64-9ba292ec20b1",
+        "password" :"HswsFyj3eKxl",
+        "workspace_id" : "6d075aa3-88f8-412b-a50a-1f14100a69fb"  
+    },
+    "watson_text_to_speech" : {
+        "username" : "e6487342-ae96-4cca-bc44-938fe4b4c751",
+        "password" : "WYY31VGXolfi"
+    },
+    "CloudantNosql" : {
+        "url" : "http://91b8fbd9-e6b2-45d5-a2f7-f023edd47cab-bluemix.cloudant.com/rfid/_design/chemicalsearch/_view/chemicalSearch?limit=20&reduce=false&descending=true"
+    }
+    
+}
