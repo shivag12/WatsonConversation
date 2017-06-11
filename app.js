@@ -10,7 +10,9 @@ var http = require("http");
 //Variables Declaration 
 var app = express();
 var PORT = process.env.PORT || 3000;
-var context = {};
+var context = {
+    location : "#location#"
+};
 
 app.set("view engine","ejs");
 
@@ -41,46 +43,28 @@ var params = {
     accept: "audio/wav"
 } ;
 
-function httpgetrequest (){
-    http.get("http://echo.jsontest.com/location/D314-lab1/RFID/raspberry_pi",function(res){
-        res.on("data",function(data){
-            rawdata += data;
-        })
-        res.on("end",function(){
-
-        })
-    })
-} 
 
 //Get request : https:localhost:3000
 app.get("/",function(req,res){
     //URL : http://localhost:3000/?email=gshiva5&password=shiva123 , Getting query string parameters (req.query.email)   
     //Sending the message to the browser. 
    var rawdata = "";
-   console.log("Get function")
    http.get(config.CloudantNosql.url,function(r){
         r.on("data",function(d){
             rawdata += d;
         })
         r.on("end",function(){
             //console.log(rawdata);
-            //var jsonrawdata = JSON.parse(rawdata);
-            //context.location = jsonrawdata.location;
-            //context.location = "D314";
-            //console.log(jsonrawdata);
-           //console.log(chemical_location(jsonrawdata,"Amino Acid"));
-            //res.send("Count :"+jsonrawdata.rows[0].key);
-            
+            var jsonrawdata = JSON.parse(rawdata);
+            console.log(jsonrawdata);
+            console.log(chemical_location(jsonrawdata,"chloromethane"));
+            conversationmessage(req,res,context,jsonrawdata);
         })
    })
-
-   context.location = "D314";
-   conversationmessage(req,res,context);
-
 })
 
 //Calling Watson Conversation message
-function conversationmessage(req,res,location){
+function conversationmessage(req,res,location,db_data){
     conversation.message({
         input : {text : req.query.input_text},
         workspace_id : config.watson_conversation.workspace_id,
@@ -89,13 +73,20 @@ function conversationmessage(req,res,location){
     },function(err,response){
         if(err){
             console.log(err);
-        } else {            
-            context = response.context;
-            //res.send(response);
+        } else {  
+            //Maintaining the state of the conversation          
+            context = response.context;         
             console.log(response);
-            console.log("---------------------------------------")
-            //params.text = response.output.text[0]
-            //playaudio(res);
+            var response_parsing = response.output.text[0];
+            var response_entity = parsing_conv_respone(response);
+            console.log(response_entity);
+            var current_chemical_loc = chemical_location(db_data,response_entity); 
+            console.log(current_chemical_loc);
+            response_parsing = response_parsing.replace("#location#", current_chemical_loc);
+            console.log(response_parsing);
+            params.text = response_parsing;
+            playaudio(res);
+            //res.send(response); // This will be used to publish the code to the browser
         }
     })
 }
@@ -107,16 +98,32 @@ function playaudio (res){
     }).pipe(res); 
 }
 
-//Getting the location state of the chemical 
+//Getting the location state of the chemical from the cloudant_DB
 function chemical_location(rawdata,chemical_name){
-   var chemical_location = "";
-    for(var i=0; i< rawdata.rows.length; i++){        
-        if(rawdata.rows[i].key === chemical_name){
-            chemical_location = rawdata.rows[i].value[1];
-            break;
+   var chemical_loc = "";
+   if(chemical_name !== null){   
+        for(var i=0; i< rawdata.rows.length; i++){        
+            if(rawdata.rows[i].key.toLowerCase() === chemical_name.toLowerCase()){
+                chemical_loc = rawdata.rows[i].value[1];
+                break;
+            }
         }
-    }
-    return chemical_location;
+   }
+    return chemical_loc;
+}
+
+function parsing_conv_respone(convrespose){
+    var entity_chemical_name = "";
+    if(convrespose.entities.length !== 0){
+        for(var i=0;i<convrespose.entities.length;i++){
+            entity_chemical_name = convrespose.entities[i].value;
+            //console.log(convrespose.entities[i].value);
+        }        
+    } else {
+        entity_chemical_name = null;
+        //console.log("Entities are empty");
+    }    
+    return entity_chemical_name;
 }
 
 //generating Auth token for Speech to Text service 
