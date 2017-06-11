@@ -57,19 +57,26 @@ app.get("/",function(req,res){
     //URL : http://localhost:3000/?email=gshiva5&password=shiva123 , Getting query string parameters (req.query.email)   
     //Sending the message to the browser. 
    var rawdata = "";
+   console.log("Get function")
    http.get(config.CloudantNosql.url,function(r){
         r.on("data",function(d){
             rawdata += d;
         })
         r.on("end",function(){
-            var jsonrawdata = JSON.parse(rawdata);
-            context.location = jsonrawdata.location;
+            //console.log(rawdata);
+            //var jsonrawdata = JSON.parse(rawdata);
+            //context.location = jsonrawdata.location;
+            //context.location = "D314";
             //console.log(jsonrawdata);
-           console.log(chemical_location(jsonrawdata,"Amino Acid"));
-            res.send("Count :"+jsonrawdata.rows[0].key);
-            //conversationmessage(req,res,context);
+           //console.log(chemical_location(jsonrawdata,"Amino Acid"));
+            //res.send("Count :"+jsonrawdata.rows[0].key);
+            
         })
    })
+
+   context.location = "D314";
+   conversationmessage(req,res,context);
+
 })
 
 //Calling Watson Conversation message
@@ -86,8 +93,9 @@ function conversationmessage(req,res,location){
             context = response.context;
             //res.send(response);
             console.log(response);
-            params.text = response.output.text[0]
-            playaudio(res);
+            console.log("---------------------------------------")
+            //params.text = response.output.text[0]
+            //playaudio(res);
         }
     })
 }
