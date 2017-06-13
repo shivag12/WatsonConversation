@@ -1,6 +1,5 @@
 var express = require("express");
 var watson = require("watson-developer-cloud");
-var getusermedia = require("get-user-media-promise");
 var ConversationV1 = require("watson-developer-cloud/conversation/v1");
 var texttospeech = require("watson-developer-cloud/text-to-speech/v1");
 var config = require("./config.json");
