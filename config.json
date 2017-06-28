@@ -9,7 +9,7 @@
         "password" : "WYY31VGXolfi"
     },
     "CloudantNosql" : {
-        "url" : "http://91b8fbd9-e6b2-45d5-a2f7-f023edd47cab-bluemix.cloudant.com/rfid/_design/chemicalsearch/_view/chemicalSearch?limit=20&reduce=false&descending=true"
+        "url" : "http://926e72d2-4ee9-4c5c-8544-c7c0ebe4b1e0-bluemix.cloudant.com/rfid_reads_v1/_design/chem_name/_view/Chem_name?reduce=false&descending=true&key="
     }
     
 }

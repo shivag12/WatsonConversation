@@ -45,25 +45,11 @@ var params = {
 
 //Get request : https:localhost:3000
 app.get("/",function(req,res){
-    //URL : http://localhost:3000/?email=gshiva5&password=shiva123 , Getting query string parameters (req.query.email)   
-    //Sending the message to the browser. 
-   var rawdata = "";
-   http.get(config.CloudantNosql.url,function(r){
-        r.on("data",function(d){
-            rawdata += d;
-        })
-        r.on("end",function(){
-            //console.log(rawdata);
-            var jsonrawdata = JSON.parse(rawdata);
-            console.log(jsonrawdata);
-            console.log(chemical_location(jsonrawdata,"chloromethane"));
-            conversationmessage(req,res,context,jsonrawdata);
-        })
-   })
+    conversationmessage(req,res,context);
 })
 
 //Calling Watson Conversation message
-function conversationmessage(req,res,location,db_data){
+function conversationmessage(req,res,location){
     conversation.message({
         input : {text : req.query.input_text},
         workspace_id : config.watson_conversation.workspace_id,
@@ -75,17 +61,21 @@ function conversationmessage(req,res,location,db_data){
         } else {  
             //Maintaining the state of the conversation          
             context = response.context;         
-            console.log(response);
+            //console.log(response);
             var response_parsing = response.output.text[0];
             var response_entity = parsing_conv_respone(response);
             console.log(response_entity);
-            var current_chemical_loc = chemical_location(db_data,response_entity); 
-            console.log(current_chemical_loc);
-            response_parsing = response_parsing.replace("#location#", current_chemical_loc);
-            console.log(response_parsing);
-            params.text = response_parsing;
-            playaudio(res);
-            //res.send(response); // This will be used to publish the code to the browser
+
+            cloudantGetRequest(response_entity,function(rawdata){
+                console.log(rawdata);
+                var current_chemical_loc = chemical_location(rawdata,response_entity); 
+                //console.log(current_chemical_loc);
+                response_parsing = response_parsing.replace("#location#", current_chemical_loc);
+                //console.log(response_parsing);
+                params.text = response_parsing;
+                playaudio(res);
+                //res.send(response_parsing); // This will be used to publish the code to the browser
+            })            
         }
     })
 }
@@ -97,18 +87,43 @@ function playaudio (res){
     }).pipe(res); 
 }
 
+function cloudantGetRequest(responseentity,callback){
+    
+    var urlParsing = config.CloudantNosql.url;
+    urlParsing = urlParsing.concat("\""+responseentity+"\"");
+    //console.log(urlParsing);    
+    var rawdata = "";
+    var jsonrawdata = "";
+
+    http.get(urlParsing,function(resdata){
+        resdata.on("data",function(d){
+            rawdata += d;
+        })        
+        resdata.on("end",function(){                 
+                jsonrawdata = JSON.parse(rawdata);
+                callback(jsonrawdata);                 
+            })
+        })
+      
+}
+
 //Getting the location state of the chemical from the cloudant_DB
 function chemical_location(rawdata,chemical_name){
    var chemical_loc = "";
-   if(chemical_name !== null){   
-        for(var i=0; i< rawdata.rows.length; i++){        
-            if(rawdata.rows[i].key.toLowerCase() === chemical_name.toLowerCase()){
-                chemical_loc = rawdata.rows[i].value[1];
-                break;
+   var chemical_loc1 = "";
+   var tempDate = "2017-05-26 15:47:03.754Z";
+
+   if(chemical_name !== null){  
+
+        for(var i=0; i< rawdata.rows.length; i++){
+            chemical_loc = rawdata.rows[i].value[1];            
+            if(Date.parse(rawdata.rows[i].value[0]) > Date.parse(tempDate)){
+                chemical_loc1 = rawdata.rows[i].value[1];
+                tempDate = rawdata.rows[i].value[0];               
             }
-        }
+        }        
    }
-    return chemical_loc;
+    return chemical_loc1;
 }
 
 function parsing_conv_respone(convrespose){
